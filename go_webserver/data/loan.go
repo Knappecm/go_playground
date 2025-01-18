@@ -5,54 +5,68 @@ import (
 	"errors"
 	"go_playground/go_webserver/types"
 	"io"
+	"strconv"
 	"sync"
 )
 
-var loanCache = make(map[int]types.User)
+var loanCache = make(map[int]types.Loan)
 
 var loanCacheMutex sync.RWMutex
 
-func GenerateLoanData(id int) (types.User, error) {
+func GetLoan(id int, userId int) (types.Loan, error) {
 	loanCacheMutex.RLock()
-	user, ok := loanCache[id]
+	loan, ok := loanCache[id]
 	loanCacheMutex.RUnlock()
 
 	if !ok {
-		return types.User{}, errors.New("user not found")
+		return types.Loan{}, errors.New("loan not found")
 	}
 
-	return user, nil
+	if loan.UserId != userId {
+		return types.Loan{}, errors.New("you don't have access to this loan")
+	}
+
+	return loan, nil
 }
 
 func CreateLoan(body io.ReadCloser) (int, error) {
-	var user types.User
+	var loan types.Loan
 	var errorString string
-	err := json.NewDecoder(body).Decode(&user)
+	err := json.NewDecoder(body).Decode(&loan)
 	if err != nil {
 		return 0, err
 	}
 
-	if user.FirstName == "" {
-		errorString += "first name is required\n"
+	if loan.UserId <= 0 {
+		errorString += "User Id is required\n"
 	}
-	if user.LastName == "" {
-		errorString += "last name is required\n"
+
+	_, err = GetUser(loan.UserId)
+	if err != nil {
+		errorString += "User " + strconv.Itoa(loan.UserId) + " does not exist\n"
 	}
-	if user.Email == "" {
-		errorString += "Email is required\n"
+
+	if loan.Amount <= 0 {
+		errorString += "Loan amount is required and cannot be less than or equal to 0\n"
+	}
+	if loan.InterestRate <= 0 {
+		errorString += "Interest rate is required and cannot be less than or equal to 0\n"
+	}
+	if loan.LoanTermMonths <= 0 {
+		errorString += "Loan term is required and cannot be less than or equal to 0\n"
 	}
 
 	if errorString != "" {
 		return 0, errors.New(errorString)
 	}
 
-	user.Id = len(loanCache) + 1
+	loan.Id = len(loanCache) + 1
 
 	loanCacheMutex.Lock()
-	loanCache[user.Id] = user
+	loanCache[loan.Id] = loan
 	loanCacheMutex.Unlock()
 
-	return user.Id, nil
+	return loan.Id, nil
 }
 
 func DeleteLoan(id int) error {
@@ -61,7 +75,7 @@ func DeleteLoan(id int) error {
 	loanCacheMutex.RUnlock()
 
 	if !ok {
-		return errors.New("user not found")
+		return errors.New("loan not found")
 	}
 
 	loanCacheMutex.Lock()
