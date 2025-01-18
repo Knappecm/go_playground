@@ -5,8 +5,5 @@ type User struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
-}
-
-type CreateUserReturnType struct {
-	Id int `json:"id"`
+	Loans     []int  `json:"loans"`
 }
