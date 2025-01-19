@@ -3,6 +3,7 @@ package loanApi
 import (
 	"encoding/json"
 	"go_playground/go_webserver/data/LoanData"
+	Userdata "go_playground/go_webserver/data/UserData"
 	"go_playground/go_webserver/types"
 	"net/http"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 
 func InitializeLoanApi(mux *http.ServeMux) {
 	mux.HandleFunc("POST /loan", CreateLoan)
+	mux.HandleFunc("GET /loans/user/{id}", GetAllLoansForUser)
 	mux.HandleFunc("GET /loan/{id}", GetLoan)
 	mux.HandleFunc("DELETE /loan/{id}", DeleteLoan)
 }
@@ -80,6 +82,75 @@ func GetLoan(
 	}
 
 	w.Write(loanAtId)
+
+}
+
+func GetAllLoansForUser(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	user, err := Userdata.GetUser(id)
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if len(user.Loans) == 0 {
+		emptyLoan, err := json.Marshal([]types.Loan{})
+		if err != nil {
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		w.Write(emptyLoan)
+	}
+
+	allLoans := []types.Loan{}
+
+	for _, v := range user.Loans {
+		loan, err := LoanData.GetLoan(v, user.Id)
+		if err != nil {
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+		allLoans = append(allLoans, loan)
+	}
+
+	w.Header().Set("Content-Type", "Application/json")
+	AllLoansJson, err := json.Marshal(allLoans)
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.Write(AllLoansJson)
 
 }
 
