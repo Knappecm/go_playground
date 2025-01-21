@@ -3,7 +3,7 @@ package LoanData
 import (
 	"encoding/json"
 	"errors"
-	"go_playground/go_webserver/bisLogic/UserLogic.go"
+	"go_playground/go_webserver/bisLogic/UserLogic"
 	Userdata "go_playground/go_webserver/data/UserData"
 	"go_playground/go_webserver/types"
 	"io"

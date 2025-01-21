@@ -48,6 +48,35 @@ func GetLoan(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
+	var result map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&result)
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	userId, ok := result["userId"].(int)
+	if !ok {
+		http.Error(
+			w,
+			"User ID field is invalid",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if !Userdata.DoesUserExist(userId) {
+		http.Error(
+			w,
+			"User does not exist",
+			http.StatusBadRequest,
+		)
+		return
+	}
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -59,12 +88,20 @@ func GetLoan(
 		return
 	}
 
-	loan, err := LoanData.GetLoan(id, 1)
-
+	loan, err := LoanData.GetLoan(id, userId)
 	if err != nil {
 		http.Error(
 			w,
 			err.Error(),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if loan.UserId != userId {
+		http.Error(
+			w,
+			"you do not have access to this loan",
 			http.StatusBadRequest,
 		)
 		return

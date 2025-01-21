@@ -8,9 +8,9 @@ import (
 )
 
 func InitializeUserApi(mux *http.ServeMux) {
-	mux.HandleFunc("POST /users", CreateUser)
-	mux.HandleFunc("GET /users/{id}", GetUser)
-	mux.HandleFunc("DELETE /users/{id}", deleteUser)
+	mux.HandleFunc("POST /user", CreateUser)
+	mux.HandleFunc("GET /user/{id}", GetUser)
+	mux.HandleFunc("DELETE /user/{id}", deleteUser)
 }
 
 func CreateUser(

@@ -23,6 +23,14 @@ func GetUser(id int) (types.User, error) {
 	return user, nil
 }
 
+func DoesUserExist(id int) bool {
+	userCacheMutex.RLock()
+	_, exists := userCache[id]
+	userCacheMutex.RUnlock()
+
+	return exists
+}
+
 func UpdateUser(user types.User) error {
 	_, err := GetUser(user.Id)
 	if err != nil {

@@ -12,8 +12,8 @@ func main() {
 	userApi.InitializeUserApi(mux)
 	loanApi.InitializeLoanApi(mux)
 
-	fmt.Println("Server Listening to 8090")
-	err := http.ListenAndServe(":8090", mux)
+	fmt.Println("Server Listening to 8080")
+	err := http.ListenAndServe(":8080", mux)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
