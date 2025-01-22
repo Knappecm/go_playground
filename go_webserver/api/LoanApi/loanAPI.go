@@ -2,6 +2,7 @@ package loanApi
 
 import (
 	"encoding/json"
+	"go_playground/go_webserver/bisLogic/LoanLogic"
 	"go_playground/go_webserver/data/LoanData"
 	Userdata "go_playground/go_webserver/data/UserData"
 	"go_playground/go_webserver/types"
@@ -14,6 +15,7 @@ func InitializeLoanApi(mux *http.ServeMux) {
 	mux.HandleFunc("GET /loans/user/{id}", GetAllLoansForUser)
 	mux.HandleFunc("GET /loan/{id}", GetLoan)
 	mux.HandleFunc("DELETE /loan/{id}", DeleteLoan)
+	mux.HandleFunc("GET /loan/{id}/breakdown", GetLoanBreakDown)
 }
 
 func CreateLoan(
@@ -59,7 +61,7 @@ func GetLoan(
 		return
 	}
 
-	userId, ok := result["userId"].(int)
+	userId, ok := result["userId"].(float64)
 	if !ok {
 		http.Error(
 			w,
@@ -69,7 +71,7 @@ func GetLoan(
 		return
 	}
 
-	if !Userdata.DoesUserExist(userId) {
+	if !Userdata.DoesUserExist(int(userId)) {
 		http.Error(
 			w,
 			"User does not exist",
@@ -88,7 +90,7 @@ func GetLoan(
 		return
 	}
 
-	loan, err := LoanData.GetLoan(id, userId)
+	loan, err := LoanData.GetLoan(id, int(userId))
 	if err != nil {
 		http.Error(
 			w,
@@ -98,7 +100,7 @@ func GetLoan(
 		return
 	}
 
-	if loan.UserId != userId {
+	if loan.UserId != int(userId) {
 		http.Error(
 			w,
 			"you do not have access to this loan",
@@ -218,4 +220,83 @@ func DeleteLoan(
 
 	w.WriteHeader(http.StatusNoContent)
 
+}
+
+func GetLoanBreakDown(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	var result map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&result)
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	userId, ok := result["userId"].(float64)
+	if !ok {
+		http.Error(
+			w,
+			"User ID field is invalid",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if !Userdata.DoesUserExist(int(userId)) {
+		http.Error(
+			w,
+			"User does not exist",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	loan, err := LoanData.GetLoan(id, int(userId))
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	LoanBreakDown := LoanLogic.GenerateAmortizationSchedule(float64(loan.Amount), float64(loan.InterestRate), loan.LoanTermMonths)
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	w.Header().Set("Content-Type", "Application/json")
+	LoanBreakDownJson, err := json.Marshal(LoanBreakDown)
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.Write(LoanBreakDownJson)
 }

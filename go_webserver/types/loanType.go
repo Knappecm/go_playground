@@ -10,7 +10,17 @@ type Loan struct {
 }
 
 type LoanAmortization struct {
-	Month        int     `json:"month"`
-	Principal    float64 `json:"principal"`
-	InterestPaid float64 `json:"interestPaid"`
+	Month              int     `json:"month"`
+	PrincipalThisMonth float64 `json:"principalThisMonth"`
+	InterestThisMonth  float64 `json:"interestThisMonth"`
+	TotalInterestPaid  float64 `json:"totalInterestPaid"`
+	TotalPrincipalPaid float64 `json:"totalPrincipalPaid"`
+	TotalRemaining     float64 `json:"totalRemaining"`
+}
+
+type LoanBreakDown struct {
+	MonthlyPayment   float64            `json:"monthlyPayment"`
+	TotalPaid        float64            `json:"totalPaid"`
+	TotalInterest    float64            `json:"totalInterest"`
+	MonthlyBreakDown []LoanAmortization `json:"monthlyBreakDown"`
 }
