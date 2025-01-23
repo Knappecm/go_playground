@@ -1,10 +1,12 @@
 package types
 
+import "sync"
+
 type Loan struct {
 	Id             int     `json:"id"`
 	UserId         int     `json:"userId"`
-	Amount         float32 `json:"amount"`
-	InterestRate   float32 `json:"interestRate"`
+	Amount         float64 `json:"amount"`
+	InterestRate   float64 `json:"interestRate"`
 	LoanTermMonths int     `json:"loanTermMonths"`
 	LoanAlias      string  `json:"loanAlias"`
 }
@@ -23,4 +25,9 @@ type LoanBreakDown struct {
 	TotalPaid        float64            `json:"totalPaid"`
 	TotalInterest    float64            `json:"totalInterest"`
 	MonthlyBreakDown []LoanAmortization `json:"monthlyBreakDown"`
+}
+
+type LoanCache struct {
+	Count   int
+	SafeMap sync.Map
 }

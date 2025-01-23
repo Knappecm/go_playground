@@ -5,33 +5,40 @@ import (
 	"math"
 )
 
-// func getTotalInterest(loan types.Loan) (float64, error) {
+type LoanLogicService interface {
+	MonthlyPayment(loan types.Loan, monthlyInterest float64) float64
+	AmortizationSchedule(loan types.Loan) types.LoanBreakDown
+}
 
-// }
+type LoanLogicImpl struct{}
 
-func CalcMonthlyPayment(principal float64, MonthlyInterest float64, loanTermInMonths float64) float64 {
+func (u *LoanLogicImpl) MonthlyPayment(loan types.Loan, monthlyInterest float64) float64 {
 	// formula: EMI = [P * r * ( 1 + r )^n] / [(1 + r)^n - 1]
 
-	monthlyPayment := MonthlyInterest * math.Pow((1+MonthlyInterest), loanTermInMonths)
-	monthlyPayment = monthlyPayment / (math.Pow((1+MonthlyInterest), loanTermInMonths) - 1)
-	monthlyPayment = monthlyPayment * principal
+	monthlyPayment := monthlyInterest * math.Pow((1+monthlyInterest), float64(loan.LoanTermMonths))
+	monthlyPayment = monthlyPayment / (math.Pow((1+monthlyInterest), float64(loan.LoanTermMonths)) - 1)
+	monthlyPayment = monthlyPayment * loan.Amount
 
 	return monthlyPayment
 }
 
-func GenerateAmortizationSchedule(principal float64, annualInterestRate float64, loanTermInMonths int) types.LoanBreakDown {
-	monthlyRate := annualInterestRate / 12 / 100
-	monthlyPayment := CalcMonthlyPayment(principal, monthlyRate, float64(loanTermInMonths))
-	remainingBalance := principal
-	totalInterestPaid := 0.0
+func (u *LoanLogicImpl) AmortizationSchedule(loan types.Loan) types.LoanBreakDown {
+	monthlyRate := loan.InterestRate / 12 / 100
+	loanBreakdown := types.LoanBreakDown{
+		MonthlyPayment: math.Round(u.MonthlyPayment(loan, monthlyRate)*100) / 100,
+	}
+
+	remainingBalance := loan.Amount
 	totalPrincipalPaid := 0.0
-	monthlyBreakdown := make([]types.LoanAmortization, loanTermInMonths)
-	for month := 1; month <= loanTermInMonths; month++ {
+	monthlyBreakdown := make([]types.LoanAmortization, loan.LoanTermMonths)
+
+	for month := 1; month <= loan.LoanTermMonths; month++ {
 		interest := math.Round((remainingBalance*monthlyRate)*100) / 100
-		principalPayment := math.Round((monthlyPayment-interest)*100) / 100
+		principalPayment := math.Round((loanBreakdown.MonthlyPayment-interest)*100) / 100
 		remainingBalance = math.Round((remainingBalance-principalPayment)*100) / 100
-		totalInterestPaid = math.Round((totalInterestPaid+interest)*100) / 100
+		loanBreakdown.TotalInterest = math.Round((loanBreakdown.TotalInterest+interest)*100) / 100
 		totalPrincipalPaid = math.Round((totalPrincipalPaid+principalPayment)*100) / 100
+
 		if remainingBalance < 1 {
 			remainingBalance = 0
 		}
@@ -41,7 +48,7 @@ func GenerateAmortizationSchedule(principal float64, annualInterestRate float64,
 				Month:              month,
 				PrincipalThisMonth: principalPayment,
 				InterestThisMonth:  interest,
-				TotalInterestPaid:  totalInterestPaid,
+				TotalInterestPaid:  loanBreakdown.TotalInterest,
 				TotalPrincipalPaid: totalPrincipalPaid,
 				TotalRemaining:     remainingBalance,
 			}
@@ -49,9 +56,8 @@ func GenerateAmortizationSchedule(principal float64, annualInterestRate float64,
 		monthlyBreakdown[month-1] = monthBreakDown
 
 	}
-	totalPaid := totalInterestPaid + principal
-	monthlyPayment = math.Round(monthlyPayment*100) / 100
-	totalPaid = math.Round(totalPaid*100) / 100
-	totalInterestPaid = math.Round(totalInterestPaid*100) / 100
-	return types.LoanBreakDown{MonthlyPayment: monthlyPayment, TotalPaid: totalPaid, TotalInterest: totalInterestPaid, MonthlyBreakDown: monthlyBreakdown}
+	loanBreakdown.MonthlyBreakDown = monthlyBreakdown
+	loanBreakdown.TotalPaid = math.Round((loanBreakdown.TotalInterest+loan.Amount)*100) / 100
+
+	return loanBreakdown
 }

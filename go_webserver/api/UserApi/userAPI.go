@@ -1,23 +1,27 @@
-package userApi
+package UserApi
 
 import (
 	"encoding/json"
-	Userdata "go_playground/go_webserver/data/UserData"
+	"go_playground/go_webserver/data/UserData"
 	"net/http"
 	"strconv"
 )
 
-func InitializeUserApi(mux *http.ServeMux) {
-	mux.HandleFunc("POST /user", CreateUser)
-	mux.HandleFunc("GET /user/{id}", GetUser)
-	mux.HandleFunc("DELETE /user/{id}", deleteUser)
+type UserHandler struct {
+	UserDataService UserData.UserDataService
 }
 
-func CreateUser(
+func (d *UserHandler) InitializeUserApi(mux *http.ServeMux) {
+	mux.HandleFunc("POST /user", d.CreateUser)
+	mux.HandleFunc("GET /user/{id}", d.GetUser)
+	mux.HandleFunc("DELETE /user/{id}", d.deleteUser)
+}
+
+func (d *UserHandler) CreateUser(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	user, err := Userdata.CreateUser(r.Body)
+	user, err := d.UserDataService.CreateUser(r.Body)
 	if err != nil {
 		http.Error(
 			w,
@@ -41,7 +45,7 @@ func CreateUser(
 	w.Write(jsonID)
 }
 
-func GetUser(
+func (d *UserHandler) GetUser(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
@@ -56,7 +60,7 @@ func GetUser(
 		return
 	}
 
-	user, err := Userdata.GetUser(id)
+	user, err := d.UserDataService.GetUser(id)
 
 	if err != nil {
 		http.Error(
@@ -82,7 +86,7 @@ func GetUser(
 
 }
 
-func deleteUser(
+func (d *UserHandler) deleteUser(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
@@ -97,7 +101,7 @@ func deleteUser(
 		return
 	}
 
-	err = Userdata.DeleteUser(id)
+	err = d.UserDataService.DeleteUser(id)
 	if err != nil {
 		http.Error(
 			w,

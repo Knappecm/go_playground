@@ -1,18 +1,26 @@
 package UserLogic
 
 import (
-	Userdata "go_playground/go_webserver/data/UserData"
+	"go_playground/go_webserver/data/UserData"
 )
 
-func AddLoanToUser(userID int, loanId int) error {
-	user, err := Userdata.GetUser(userID)
+type UserLogicService interface {
+	AddLoanToUser(userID int, loanId int) error
+}
+
+type UserLogicImpl struct {
+	UserDataService UserData.UserDataService
+}
+
+func (u *UserLogicImpl) AddLoanToUser(userID int, loanId int) error {
+	user, err := u.UserDataService.GetUser(userID)
 	if err != nil {
 		return err
 	}
 
 	user.Loans = append(user.Loans, loanId)
 
-	err = Userdata.UpdateUser(user)
+	err = u.UserDataService.UpdateUser(user)
 	if err != nil {
 		return err
 	}

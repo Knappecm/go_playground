@@ -1,50 +1,51 @@
-package Userdata
+package UserData
 
 import (
 	"encoding/json"
 	"errors"
 	"go_playground/go_webserver/types"
 	"io"
-	"sync"
 )
 
-var userCache = make(map[int]types.User)
-var userCacheMutex sync.RWMutex
+type UserDataService interface {
+	GetUser(id int) (types.User, error)
+	DoesUserExist(id int) bool
+	UpdateUser(user types.User) error
+	CreateUser(body io.ReadCloser) (types.User, error)
+	DeleteUser(id int) error
+}
 
-func GetUser(id int) (types.User, error) {
-	userCacheMutex.RLock()
-	user, ok := userCache[id]
-	userCacheMutex.RUnlock()
+type UserDataImpl struct{}
 
+var userCache types.UserCache
+
+func (d *UserDataImpl) GetUser(id int) (types.User, error) {
+	value, ok := userCache.SafeMap.Load(id)
 	if !ok {
 		return types.User{}, errors.New("user not found")
 	}
+	user := value.(types.User)
 
 	return user, nil
 }
 
-func DoesUserExist(id int) bool {
-	userCacheMutex.RLock()
-	_, exists := userCache[id]
-	userCacheMutex.RUnlock()
-
-	return exists
+func (d *UserDataImpl) DoesUserExist(id int) bool {
+	_, ok := userCache.SafeMap.Load(id)
+	return ok
 }
 
-func UpdateUser(user types.User) error {
-	_, err := GetUser(user.Id)
+func (d *UserDataImpl) UpdateUser(user types.User) error {
+	_, err := d.GetUser(user.Id)
 	if err != nil {
 		return err
 	}
 
-	userCacheMutex.Lock()
-	userCache[user.Id] = user
-	userCacheMutex.Unlock()
+	userCache.SafeMap.Store(user.Id, user)
 
 	return nil
 }
 
-func CreateUser(body io.ReadCloser) (types.User, error) {
+func (d *UserDataImpl) CreateUser(body io.ReadCloser) (types.User, error) {
 	var user types.User
 	var errorString string
 	err := json.NewDecoder(body).Decode(&user)
@@ -66,27 +67,20 @@ func CreateUser(body io.ReadCloser) (types.User, error) {
 		return types.User{}, errors.New(errorString)
 	}
 
-	user.Id = len(userCache) + 1
-
-	userCacheMutex.Lock()
-	userCache[user.Id] = user
-	userCacheMutex.Unlock()
+	userCache.Count++
+	user.Id = userCache.Count
+	userCache.SafeMap.Store(user.Id, user)
 
 	return user, nil
 }
 
-func DeleteUser(id int) error {
-	userCacheMutex.RLock()
-	_, ok := userCache[id]
-	userCacheMutex.RUnlock()
-
+func (d *UserDataImpl) DeleteUser(id int) error {
+	_, ok := userCache.SafeMap.Load(id)
 	if !ok {
 		return errors.New("user not found")
 	}
 
-	userCacheMutex.Lock()
-	delete(userCache, id)
-	userCacheMutex.Unlock()
+	userCache.SafeMap.Delete(id)
 
 	return nil
 }
