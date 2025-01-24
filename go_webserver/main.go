@@ -15,6 +15,8 @@ import (
 
 func main() {
 	// Initialize the UserCache
+	// went with Caches just to mock DBs 
+	// setting up a DB for the project seemed overkill 
 	userCache := types.UserCache{
 		SafeMap: &sync.Map{},
 		Count:   0,
@@ -26,11 +28,15 @@ func main() {
 		Count:   0,
 	}
 
+	// Setting up the different Services 
+	// Services can be broken down into 2 main with 3 sub services each
+	// User: UserData, UserLogic, and UserApi
 	userDataService := &UserData.UserDataImpl{UserCache: userCache}
 	userLogicService := &UserLogic.UserLogicImpl{
 		UserDataService: userDataService,
 	}
 
+	//Loan: LoanData, LoanLogic, and LoanApi
 	loanDataService := &LoanData.LoanDataImpl{LoanCache: loanCache}
 	loanLogicService := &LoanLogic.LoanLogicImpl{}
 
@@ -45,13 +51,16 @@ func main() {
 		UserLogicService: userLogicService,
 	}
 
+	// initialize a serve Mux and add the func handlers
 	mux := http.NewServeMux()
 	userHandler.InitializeUserApi(mux)
 	loanHandler.InitializeLoanApi(mux)
 
+
+	// begin the server
 	fmt.Println("Server Listening to 8080")
 	err := http.ListenAndServe(":8080", mux)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err.Error()) // Any unexpected errors get caught and printed for debugging
 	}
 }

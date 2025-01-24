@@ -12,8 +12,10 @@ type LoanLogicService interface {
 
 type LoanLogicImpl struct{}
 
+// formula: EMI = [P * r * ( 1 + r )^n] / [(1 + r)^n - 1]
+// Finds your minium monthly payment using the formula above 
+// P = Principal Amount r = Monthly Interest n = loan term in Months
 func (u *LoanLogicImpl) MonthlyPayment(loan types.Loan, monthlyInterest float64) float64 {
-	// formula: EMI = [P * r * ( 1 + r )^n] / [(1 + r)^n - 1]
 
 	monthlyPayment := monthlyInterest * math.Pow((1+monthlyInterest), float64(loan.LoanTermMonths))
 	monthlyPayment = monthlyPayment / (math.Pow((1+monthlyInterest), float64(loan.LoanTermMonths)) - 1)
@@ -22,6 +24,7 @@ func (u *LoanLogicImpl) MonthlyPayment(loan types.Loan, monthlyInterest float64)
 	return monthlyPayment
 }
 
+// Generates your loan break down by month 
 func (u *LoanLogicImpl) AmortizationSchedule(loan types.Loan) types.LoanBreakDown {
 	monthlyRate := loan.InterestRate / 12 / 100
 	loanBreakdown := types.LoanBreakDown{

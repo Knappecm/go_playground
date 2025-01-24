@@ -13,6 +13,9 @@ type LoanDataService interface {
 
 type LoanDataImpl struct{ LoanCache types.LoanCache }
 
+// GetLoan retrieves a loan from the loan cache by its ID.
+// It checks if the loan exists and if the user has access to it.
+// Returns the loan and an error if the loan is not found or the user does not have access.
 func (l *LoanDataImpl) GetLoan(id int, userId int) (types.Loan, error) {
 	value, ok := l.LoanCache.SafeMap.Load(id)
 	if !ok {
@@ -27,6 +30,9 @@ func (l *LoanDataImpl) GetLoan(id int, userId int) (types.Loan, error) {
 	return loan, nil
 }
 
+// CreateLoan adds a new loan to the loan cache.
+// It increments the loan count, assigns a new ID, and stores the loan in the cache.
+// Returns the new loan's ID and any error encountered.
 func (l *LoanDataImpl) CreateLoan(loan types.Loan) (int, error) {
 
 	l.LoanCache.Count++
@@ -36,6 +42,8 @@ func (l *LoanDataImpl) CreateLoan(loan types.Loan) (int, error) {
 	return loan.Id, nil
 }
 
+// DeleteLoan removes a loan from the loan cache by its ID.
+// Returns an error if the loan is not found in the cache.
 func (l *LoanDataImpl) DeleteLoan(id int) error {
 	_, ok := l.LoanCache.SafeMap.Load(id)
 	if !ok {

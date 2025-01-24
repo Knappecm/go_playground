@@ -19,6 +19,8 @@ type LoanHandler struct {
 	UserLogicService UserLogic.UserLogicService
 }
 
+
+// Initialize all of the loan APIs in one place
 func (l *LoanHandler) InitializeLoanApi(mux *http.ServeMux) {
 	mux.HandleFunc("POST /loan", l.CreateLoan)
 	mux.HandleFunc("GET /loans/user/{id}", l.GetAllLoansForUser)

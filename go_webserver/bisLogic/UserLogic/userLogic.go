@@ -12,6 +12,7 @@ type UserLogicImpl struct {
 	UserDataService UserData.UserDataService
 }
 
+// Adds a loan to the User object
 func (u *UserLogicImpl) AddLoanToUser(userID int, loanId int) error {
 	user, err := u.UserDataService.GetUser(userID)
 	if err != nil {

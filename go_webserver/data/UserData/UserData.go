@@ -17,6 +17,7 @@ type UserDataService interface {
 
 type UserDataImpl struct{ UserCache types.UserCache }
 
+// Gets the user off the cache
 func (d *UserDataImpl) GetUser(id int) (types.User, error) {
 	value, ok := d.UserCache.SafeMap.Load(id)
 	if !ok {
@@ -27,11 +28,13 @@ func (d *UserDataImpl) GetUser(id int) (types.User, error) {
 	return user, nil
 }
 
+// Gets the user and returns T/F
 func (d *UserDataImpl) DoesUserExist(id int) bool {
 	_, ok := d.UserCache.SafeMap.Load(id)
 	return ok
 }
 
+// Updates the User at that Id mem location
 func (d *UserDataImpl) UpdateUser(user types.User) error {
 	_, err := d.GetUser(user.Id)
 	if err != nil {
@@ -43,6 +46,7 @@ func (d *UserDataImpl) UpdateUser(user types.User) error {
 	return nil
 }
 
+// Creates a new User
 func (d *UserDataImpl) CreateUser(body io.ReadCloser) (types.User, error) {
 	var user types.User
 	var errorString string
@@ -72,6 +76,7 @@ func (d *UserDataImpl) CreateUser(body io.ReadCloser) (types.User, error) {
 	return user, nil
 }
 
+// Removes the user at the mem location id
 func (d *UserDataImpl) DeleteUser(id int) error {
 	_, ok := d.UserCache.SafeMap.Load(id)
 	if !ok {
