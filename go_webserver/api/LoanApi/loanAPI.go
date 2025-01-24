@@ -328,14 +328,6 @@ func (l *LoanHandler) GetLoanBreakDown(
 	}
 
 	LoanBreakDown := l.LoanLogicService.AmortizationSchedule(loan)
-	if err != nil {
-		http.Error(
-			w,
-			err.Error(),
-			http.StatusBadRequest,
-		)
-		return
-	}
 
 	w.Header().Set("Content-Type", "Application/json")
 	LoanBreakDownJson, err := json.Marshal(LoanBreakDown)

@@ -29,5 +29,5 @@ type LoanBreakDown struct {
 
 type LoanCache struct {
 	Count   int
-	SafeMap sync.Map
+	SafeMap *sync.Map
 }

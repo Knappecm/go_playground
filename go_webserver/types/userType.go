@@ -12,5 +12,5 @@ type User struct {
 
 type UserCache struct {
 	Count   int
-	SafeMap sync.Map
+	SafeMap *sync.Map
 }

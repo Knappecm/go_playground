@@ -15,12 +15,10 @@ type UserDataService interface {
 	DeleteUser(id int) error
 }
 
-type UserDataImpl struct{}
-
-var userCache types.UserCache
+type UserDataImpl struct{ UserCache types.UserCache }
 
 func (d *UserDataImpl) GetUser(id int) (types.User, error) {
-	value, ok := userCache.SafeMap.Load(id)
+	value, ok := d.UserCache.SafeMap.Load(id)
 	if !ok {
 		return types.User{}, errors.New("user not found")
 	}
@@ -30,7 +28,7 @@ func (d *UserDataImpl) GetUser(id int) (types.User, error) {
 }
 
 func (d *UserDataImpl) DoesUserExist(id int) bool {
-	_, ok := userCache.SafeMap.Load(id)
+	_, ok := d.UserCache.SafeMap.Load(id)
 	return ok
 }
 
@@ -40,7 +38,7 @@ func (d *UserDataImpl) UpdateUser(user types.User) error {
 		return err
 	}
 
-	userCache.SafeMap.Store(user.Id, user)
+	d.UserCache.SafeMap.Store(user.Id, user)
 
 	return nil
 }
@@ -67,20 +65,20 @@ func (d *UserDataImpl) CreateUser(body io.ReadCloser) (types.User, error) {
 		return types.User{}, errors.New(errorString)
 	}
 
-	userCache.Count++
-	user.Id = userCache.Count
-	userCache.SafeMap.Store(user.Id, user)
+	d.UserCache.Count++
+	user.Id = d.UserCache.Count
+	d.UserCache.SafeMap.Store(user.Id, user)
 
 	return user, nil
 }
 
 func (d *UserDataImpl) DeleteUser(id int) error {
-	_, ok := userCache.SafeMap.Load(id)
+	_, ok := d.UserCache.SafeMap.Load(id)
 	if !ok {
 		return errors.New("user not found")
 	}
 
-	userCache.SafeMap.Delete(id)
+	d.UserCache.SafeMap.Delete(id)
 
 	return nil
 }

@@ -11,12 +11,10 @@ type LoanDataService interface {
 	DeleteLoan(id int) error
 }
 
-type LoanDataImpl struct{}
-
-var loanCache types.LoanCache
+type LoanDataImpl struct{ LoanCache types.LoanCache }
 
 func (l *LoanDataImpl) GetLoan(id int, userId int) (types.Loan, error) {
-	value, ok := loanCache.SafeMap.Load(id)
+	value, ok := l.LoanCache.SafeMap.Load(id)
 	if !ok {
 		return types.Loan{}, errors.New("loan not found")
 	}
@@ -31,20 +29,20 @@ func (l *LoanDataImpl) GetLoan(id int, userId int) (types.Loan, error) {
 
 func (l *LoanDataImpl) CreateLoan(loan types.Loan) (int, error) {
 
-	loanCache.Count++
-	loan.Id = loanCache.Count
-	loanCache.SafeMap.Store(loan.Id, loan)
+	l.LoanCache.Count++
+	loan.Id = l.LoanCache.Count
+	l.LoanCache.SafeMap.Store(loan.Id, loan)
 
 	return loan.Id, nil
 }
 
 func (l *LoanDataImpl) DeleteLoan(id int) error {
-	_, ok := loanCache.SafeMap.Load(id)
+	_, ok := l.LoanCache.SafeMap.Load(id)
 	if !ok {
 		return errors.New("loan not found")
 	}
 
-	loanCache.SafeMap.Delete(id)
+	l.LoanCache.SafeMap.Delete(id)
 
 	return nil
 }

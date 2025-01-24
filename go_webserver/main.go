@@ -8,19 +8,34 @@ import (
 	"go_playground/go_webserver/bisLogic/UserLogic"
 	"go_playground/go_webserver/data/LoanData"
 	"go_playground/go_webserver/data/UserData"
+	"go_playground/go_webserver/types"
 	"net/http"
+	"sync"
 )
 
 func main() {
-	userDataService := &UserData.UserDataImpl{}
+	// Initialize the UserCache
+	userCache := types.UserCache{
+		SafeMap: &sync.Map{},
+		Count:   0,
+	}
+
+	// Initialize the LoanCache
+	loanCache := types.LoanCache{
+		SafeMap: &sync.Map{},
+		Count:   0,
+	}
+
+	userDataService := &UserData.UserDataImpl{UserCache: userCache}
 	userLogicService := &UserLogic.UserLogicImpl{
 		UserDataService: userDataService,
 	}
-	loanDataService := &LoanData.LoanDataImpl{}
+	
+	loanDataService := &LoanData.LoanDataImpl{LoanCache: loanCache}
 	loanLogicService := &LoanLogic.LoanLogicImpl{}
 
 	userHandler := &UserApi.UserHandler{
-		UserDataService: userDataService, // Inject the business logic
+		UserDataService: userDataService,
 	}
 
 	loanHandler := &LoanApi.LoanHandler{
