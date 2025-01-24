@@ -71,7 +71,7 @@ func (l *LoanHandler) CreateLoan(
 	}
 
 	Id, err := l.LoanDataService.CreateLoan(loan)
-	l.UserLogicService.AddLoanToUser(loan.UserId, loan.Id)
+	l.UserLogicService.AddLoanToUser(loan.UserId, Id)
 
 	if err != nil {
 		http.Error(

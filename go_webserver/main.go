@@ -17,13 +17,13 @@ func main() {
 	// Initialize the UserCache
 	userCache := types.UserCache{
 		SafeMap: &sync.Map{},
-		Count:   1,
+		Count:   0,
 	}
 
 	// Initialize the LoanCache
 	loanCache := types.LoanCache{
 		SafeMap: &sync.Map{},
-		Count:   1,
+		Count:   0,
 	}
 
 	userDataService := &UserData.UserDataImpl{UserCache: userCache}
