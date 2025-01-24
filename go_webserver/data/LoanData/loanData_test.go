@@ -11,7 +11,7 @@ func setup() *LoanData.LoanDataImpl {
 	// Initialize a fresh LoanCache for each test
 	loanCache := &types.LoanCache{
 		SafeMap: &sync.Map{},
-		Count:   0,
+		Count:   1,
 	}
 	return &LoanData.LoanDataImpl{
 		LoanCache: *loanCache,
