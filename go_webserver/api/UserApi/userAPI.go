@@ -3,6 +3,7 @@ package UserApi
 import (
 	"encoding/json"
 	"go_playground/go_webserver/data/UserData"
+	"log/slog"
 	"net/http"
 	"strconv"
 )
@@ -15,6 +16,7 @@ func (d *UserHandler) InitializeUserApi(mux *http.ServeMux) {
 	mux.HandleFunc("POST /user", d.CreateUser)
 	mux.HandleFunc("GET /user/{id}", d.GetUser)
 	mux.HandleFunc("DELETE /user/{id}", d.deleteUser)
+	slog.Info("User Api initialized")
 }
 
 func (d *UserHandler) CreateUser(
@@ -34,6 +36,7 @@ func (d *UserHandler) CreateUser(
 	w.Header().Set("Content-Type", "Application/json")
 	jsonID, err := json.Marshal(user)
 	if err != nil {
+		slog.Error(err.Error())
 		http.Error(
 			w,
 			err.Error(),
@@ -52,6 +55,8 @@ func (d *UserHandler) GetUser(
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		slog.Error(err.Error())
+
 		http.Error(
 			w,
 			err.Error(),
@@ -63,6 +68,7 @@ func (d *UserHandler) GetUser(
 	user, err := d.UserDataService.GetUser(id)
 
 	if err != nil {
+		slog.Error(err.Error())
 		http.Error(
 			w,
 			err.Error(),
@@ -74,6 +80,7 @@ func (d *UserHandler) GetUser(
 	w.Header().Set("Content-Type", "Application/json")
 	userAtId, err := json.Marshal(user)
 	if err != nil {
+		slog.Error(err.Error())
 		http.Error(
 			w,
 			err.Error(),
@@ -93,6 +100,7 @@ func (d *UserHandler) deleteUser(
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		slog.Error(err.Error())
 		http.Error(
 			w,
 			err.Error(),
@@ -103,6 +111,7 @@ func (d *UserHandler) deleteUser(
 
 	err = d.UserDataService.DeleteUser(id)
 	if err != nil {
+		slog.Error(err.Error())
 		http.Error(
 			w,
 			err.Error(),

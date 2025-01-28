@@ -8,8 +8,11 @@ import (
 	"go_playground/go_webserver/data/LoanData"
 	"go_playground/go_webserver/data/UserData"
 	"go_playground/go_webserver/types"
+	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 type LoanHandler struct {
@@ -19,7 +22,6 @@ type LoanHandler struct {
 	UserLogicService UserLogic.UserLogicService
 }
 
-
 // Initialize all of the loan APIs in one place
 func (l *LoanHandler) InitializeLoanApi(mux *http.ServeMux) {
 	mux.HandleFunc("POST /loan", l.CreateLoan)
@@ -27,16 +29,25 @@ func (l *LoanHandler) InitializeLoanApi(mux *http.ServeMux) {
 	mux.HandleFunc("GET /loan/{id}", l.GetLoan)
 	mux.HandleFunc("DELETE /loan/{id}", l.DeleteLoan)
 	mux.HandleFunc("GET /loan/{id}/breakdown", l.GetLoanBreakDown)
+	slog.Info("Loan Api initialized")
 }
 
 func (l *LoanHandler) CreateLoan(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
+	logTraceGroup := slog.Group(
+		"request",
+		"traceID", uuid.New(),
+		"method", "POST",
+		"apiPath", "/loan",
+	)
+
 	var loan types.Loan
 	var errorString string
 	err := json.NewDecoder(r.Body).Decode(&loan)
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -64,6 +75,7 @@ func (l *LoanHandler) CreateLoan(
 	}
 
 	if errorString != "" {
+		slog.Error(errorString, logTraceGroup)
 		http.Error(
 			w,
 			errorString,
@@ -76,6 +88,7 @@ func (l *LoanHandler) CreateLoan(
 	l.UserLogicService.AddLoanToUser(loan.UserId, Id)
 
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -87,6 +100,7 @@ func (l *LoanHandler) CreateLoan(
 	w.Header().Set("Content-Type", "Application/json")
 	jsonID, err := json.Marshal(types.Loan{Id: Id})
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -102,9 +116,18 @@ func (l *LoanHandler) GetLoan(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
+
+	logTraceGroup := slog.Group(
+		"request",
+		"traceID", uuid.New(),
+		"method", "GET",
+		"apiPath", "/loan/{id}",
+	)
+
 	var result map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&result)
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -115,6 +138,7 @@ func (l *LoanHandler) GetLoan(
 
 	userId, ok := result["userId"].(float64)
 	if !ok {
+		slog.Error("User ID field is invalid", logTraceGroup)
 		http.Error(
 			w,
 			"User ID field is invalid",
@@ -124,6 +148,7 @@ func (l *LoanHandler) GetLoan(
 	}
 
 	if !l.UserDataService.DoesUserExist(int(userId)) {
+		slog.Error("User does not exist", logTraceGroup)
 		http.Error(
 			w,
 			"User does not exist",
@@ -134,6 +159,7 @@ func (l *LoanHandler) GetLoan(
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -144,6 +170,7 @@ func (l *LoanHandler) GetLoan(
 
 	loan, err := l.LoanDataService.GetLoan(id, int(userId))
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -153,6 +180,8 @@ func (l *LoanHandler) GetLoan(
 	}
 
 	if loan.UserId != int(userId) {
+		slog.Error("You do not have access to this loan", logTraceGroup)
+
 		http.Error(
 			w,
 			"you do not have access to this loan",
@@ -164,6 +193,8 @@ func (l *LoanHandler) GetLoan(
 	w.Header().Set("Content-Type", "Application/json")
 	loanAtId, err := json.Marshal(loan)
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
+
 		http.Error(
 			w,
 			err.Error(),
@@ -180,9 +211,17 @@ func (l *LoanHandler) GetAllLoansForUser(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
+	logTraceGroup := slog.Group(
+		"request",
+		"traceID", uuid.New(),
+		"method", "GET",
+		"apiPath", "/loan/{id}",
+	)
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
+
 		http.Error(
 			w,
 			err.Error(),
@@ -193,6 +232,8 @@ func (l *LoanHandler) GetAllLoansForUser(
 
 	user, err := l.UserDataService.GetUser(id)
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
+
 		http.Error(
 			w,
 			err.Error(),
@@ -204,6 +245,8 @@ func (l *LoanHandler) GetAllLoansForUser(
 	if len(user.Loans) == 0 {
 		emptyLoan, err := json.Marshal([]types.Loan{})
 		if err != nil {
+			slog.Error(err.Error(), logTraceGroup)
+
 			http.Error(
 				w,
 				err.Error(),
@@ -220,6 +263,7 @@ func (l *LoanHandler) GetAllLoansForUser(
 	for _, v := range user.Loans {
 		loan, err := l.LoanDataService.GetLoan(v, user.Id)
 		if err != nil {
+			slog.Error(err.Error(), logTraceGroup)
 			http.Error(
 				w,
 				err.Error(),
@@ -233,6 +277,7 @@ func (l *LoanHandler) GetAllLoansForUser(
 	w.Header().Set("Content-Type", "Application/json")
 	AllLoansJson, err := json.Marshal(allLoans)
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -249,9 +294,15 @@ func (l *LoanHandler) DeleteLoan(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-
+	logTraceGroup := slog.Group(
+		"request",
+		"traceID", uuid.New(),
+		"method", "DELETE",
+		"apiPath", "/loan/{id}",
+	)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -262,6 +313,7 @@ func (l *LoanHandler) DeleteLoan(
 
 	err = l.LoanDataService.DeleteLoan(id)
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -278,10 +330,16 @@ func (l *LoanHandler) GetLoanBreakDown(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-
+	logTraceGroup := slog.Group(
+		"request",
+		"traceID", uuid.New(),
+		"method", "DELETE",
+		"apiPath", "/loan/{id}/breakdown",
+	)
 	var result map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&result)
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -292,6 +350,7 @@ func (l *LoanHandler) GetLoanBreakDown(
 
 	userId, ok := result["userId"].(float64)
 	if !ok {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			"User ID field is invalid",
@@ -301,6 +360,7 @@ func (l *LoanHandler) GetLoanBreakDown(
 	}
 
 	if !l.UserDataService.DoesUserExist(int(userId)) {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			"User does not exist",
@@ -311,6 +371,7 @@ func (l *LoanHandler) GetLoanBreakDown(
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -321,6 +382,7 @@ func (l *LoanHandler) GetLoanBreakDown(
 
 	loan, err := l.LoanDataService.GetLoan(id, int(userId))
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
@@ -334,6 +396,7 @@ func (l *LoanHandler) GetLoanBreakDown(
 	w.Header().Set("Content-Type", "Application/json")
 	LoanBreakDownJson, err := json.Marshal(LoanBreakDown)
 	if err != nil {
+		slog.Error(err.Error(), logTraceGroup)
 		http.Error(
 			w,
 			err.Error(),
